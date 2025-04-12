@@ -9,8 +9,8 @@ class Users(Resource):
         return {'user': 'André'}
 
 class User(Resource):
-    def get(self):
-        return {'message': 'Teste'}
-
     def get(self, cpf):
         return {'message': cpf}
+    
+    def post(self):
+        return {'message': 'Teste'}
