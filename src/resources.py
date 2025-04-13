@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 from .models import User
 import re
+from mongoengine import NotUniqueError
 
 
 def is_valid_cpf(cpf: str) -> bool:
@@ -56,10 +57,11 @@ class UserResource(Resource):
 
         if not is_valid_cpf(args['cpf']):
             return {'message': 'Invalid CPF'}, 400
-
-        if User.objects(cpf=args['cpf']).first():
-            return {'message': 'CPF already exists'}, 400
-
+        try:
+            if User.objects(cpf=args['cpf']).first():
+                return {'message': 'CPF already exists'}, 400
+        except NotUniqueError:
+            return {'Message': 'cpf already exists in database'}, 400
         user = User(**args)
         user.save()
         return {'message': 'User created successfully'}, 201
