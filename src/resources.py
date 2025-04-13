@@ -1,9 +1,9 @@
 from flask_restful import Resource, reqparse
 from .models import User
+from mongoengine import NotUniqueError, ValidationError
 import re
-from mongoengine import NotUniqueError
 
-
+# Validador de CPF
 def is_valid_cpf(cpf: str) -> bool:
     cpf = re.sub(r'\D', '', cpf)
 
@@ -11,8 +11,7 @@ def is_valid_cpf(cpf: str) -> bool:
         return False
 
     def calculate_digit(cpf_slice, factor):
-        total = sum(int(digit) * (factor - i)
-                    for i, digit in enumerate(cpf_slice))
+        total = sum(int(digit) * (factor - i) for i, digit in enumerate(cpf_slice))
         remainder = total % 11
         return '0' if remainder < 2 else str(11 - remainder)
 
@@ -21,17 +20,22 @@ def is_valid_cpf(cpf: str) -> bool:
 
     return cpf[-2:] == digit1 + digit2
 
-
 class HelloWorld(Resource):
     def get(self):
         return {'hello': 'world'}
 
-
 class Users(Resource):
     def get(self):
         users = User.objects()
-        return [{'cpf': user.cpf, 'email': user.email} for user in users]
-
+        return [
+            {
+                'cpf': user.cpf,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'birth_date': str(user.birth_date)
+            } for user in users
+        ]
 
 class UserResource(Resource):
     def get(self, cpf):
@@ -57,11 +61,14 @@ class UserResource(Resource):
 
         if not is_valid_cpf(args['cpf']):
             return {'message': 'Invalid CPF'}, 400
+
+        if User.objects(cpf=args['cpf']).first():
+            return {'message': 'CPF already exists'}, 400
+
         try:
-            if User.objects(cpf=args['cpf']).first():
-                return {'message': 'CPF already exists'}, 400
-        except NotUniqueError:
-            return {'Message': 'cpf already exists in database'}, 400
-        user = User(**args)
-        user.save()
+            user = User(**args)
+            user.save()
+        except (ValidationError, NotUniqueError) as e:
+            return {'message': str(e)}, 400
+
         return {'message': 'User created successfully'}, 201
