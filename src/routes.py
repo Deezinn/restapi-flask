@@ -1,6 +1,7 @@
 from .app import api
-from .resources import HelloWorld, Users, User
+from .resources import HelloWorld, Users, UserResource
 
-api.add_resource(HelloWorld, '/')
-api.add_resource(Users, '/users')
-api.add_resource(User, '/user', '/user/<string:cpf>')
+def register_routes():
+    api.add_resource(HelloWorld, '/')
+    api.add_resource(Users, '/users')
+    api.add_resource(UserResource, '/user', '/user/<string:cpf>')
